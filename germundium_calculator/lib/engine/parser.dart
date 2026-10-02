@@ -45,7 +45,7 @@ class _Parser {
   Expr parseAll() {
     final expr = _expression();
     if (!_check(TokenType.eof)) {
-      throw SyntaxError('Unerwartetes "${_current.lexeme}"', _current.position);
+      throw SyntaxError('Incomplete Input', _current.position);
     }
     return expr;
   }
@@ -63,7 +63,26 @@ class _Parser {
 
   // Stufe 1
   Expr _expression() {
-    return _term();
+    var left = _term();
+
+    while (_check(TokenType.plus) || _check(TokenType.minus)) {
+      final op = _advance();
+      final right = _term();
+      final operator = op.type == TokenType.plus
+          ? BinaryOperator.add
+          : op.type == TokenType.minus
+          ? BinaryOperator.subtract
+          : throw StateError('Unreachable');
+
+      left = BinaryOp(
+        op: operator,
+        left: left,
+        right: right,
+        position: op.position,
+      );
+    }
+
+    return left;
   }
 
   // Stufe 2 (in Stufe 1 einfach direkt _primary() zurückgeben)
@@ -89,10 +108,11 @@ class _Parser {
   // Stufe 1: nur Zahlen. Stufe 2: Klammern. Stufe 4: Variablen, Aufrufe.
   Expr _primary() {
     if (_check(TokenType.eof)) {
+      //TODO: testen ob das überhaupt nötig ist, oder ob _parseAll das schon abfängt
       throw SyntaxError('Incomplete Input', _current.position);
     } else if (_check(TokenType.number)) {
       final token = _advance();
-      return NumberLiteral(token.lexeme, token.position);
+      return NumberLiteral(lexeme: token.lexeme, position: token.position);
     }
 
     throw SyntaxError('Unerwartetes "${_current.lexeme}"', _current.position);
