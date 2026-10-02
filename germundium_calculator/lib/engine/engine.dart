@@ -7,3 +7,5 @@ library;
 export 'errors.dart';
 export 'token.dart';
 export 'tokenizer.dart' show tokenize;
+export 'ast.dart';
+export 'parser.dart' show parse;

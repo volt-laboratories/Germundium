@@ -3,6 +3,8 @@ import 'package:germundium_calculator/engine/token.dart';
 import 'package:germundium_calculator/engine/tokenizer.dart';
 import 'package:test/test.dart';
 
+//dart test test/tokenizer_test.dart
+
 /// Hilfsfunktion: nur die Typen, ohne eof am Ende.
 List<TokenType> types(String s) =>
     tokenize(s).map((t) => t.type).where((t) => t != TokenType.eof).toList();
