@@ -1,15 +1,22 @@
-/// Basisklasse aller Fehler, die die Engine wirft.
+/// Base class of all errors thrown by the engine.
 ///
-/// `sealed` heißt: Die UI kann per `switch` alle Fehlerarten vollständig
-/// behandeln, und der Compiler meckert, wenn eine neue dazukommt.
+/// `sealed` means: the UI can handle every error kind exhaustively with a
+/// `switch`, and the compiler complains when a new kind is added.
+///
+/// All errors are `Exception`s (not `Error`s): they are caused by user
+/// input, get caught and displayed, and the app keeps running.
 sealed class CalcError implements Exception {
   const CalcError(this.message, [this.position]);
 
-  /// Für den Nutzer lesbare Beschreibung (deutsch).
+  /// Human-readable description of the error.
   final String message;
 
-  /// Index im Eingabetext, an dem der Fehler auftrat (falls bekannt).
-  /// Damit kann die UI später die Stelle markieren.
+  /// Index in the input text where the error occurred, or `null` if the
+  /// location is unknown.
+  ///
+  /// The parser always knows the position. The value types never do;
+  /// the evaluator adds it later. This lets the UI highlight the spot
+  /// in the input.
   final int? position;
 
   @override
@@ -17,13 +24,19 @@ sealed class CalcError implements Exception {
       position == null ? message : '$message (Position $position)';
 }
 
-/// Eingabe ist formal falsch: unbekanntes Zeichen, Klammer fehlt, ...
+/// The input is syntactically invalid and cannot be turned into an AST:
+/// unknown character, missing parenthesis, operator without operand, ...
+///
+/// Thrown by the tokenizer and the parser.
 final class SyntaxError extends CalcError {
   const SyntaxError(super.message, [super.position]);
 }
 
-/// Eingabe ist korrekt, aber nicht berechenbar: Division durch 0, ...
-/// (wird ab Schritt 4 benutzt)
+/// The input is syntactically valid but has no valid result:
+/// division by zero, factorial of a negative number, non-real result, ...
+///
+/// Thrown by the value types (from step 3 on) and later by the registry
+/// and the evaluator.
 final class MathError extends CalcError {
   const MathError(super.message, [super.position]);
 }
