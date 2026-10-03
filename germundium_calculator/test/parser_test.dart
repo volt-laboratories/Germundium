@@ -26,26 +26,22 @@ void main() {
     );
   });
 
-  group(
-    'Stufe 2: * und /, Klammern',
-    () {
-      test('Punkt vor Strich', () => expect(p('1 + 2 * 3'), '(1 + (2 * 3))'));
-      test(
-        'Division linksassoziativ',
-        () => expect(p('8 / 4 / 2'), '((8 / 4) / 2)'),
+  group('Stufe 2: * und /, Klammern', () {
+    test('Punkt vor Strich', () => expect(p('1 + 2 * 3'), '(1 + (2 * 3))'));
+    test(
+      'Division linksassoziativ',
+      () => expect(p('8 / 4 / 2'), '((8 / 4) / 2)'),
+    );
+    test('Klammern', () => expect(p('(1 + 2) * 3'), '((1 + 2) * 3)'));
+    test('verschachtelte Klammern', () => expect(p('((5))'), '5'));
+    test('Klammer nicht geschlossen', () {
+      expect(
+        () => parse('(1 + 2'),
+        throwsA(isA<SyntaxError>().having((e) => e.position, 'position', 6)),
       );
-      test('Klammern', () => expect(p('(1 + 2) * 3'), '((1 + 2) * 3)'));
-      test('verschachtelte Klammern', () => expect(p('((5))'), '5'));
-      test('Klammer nicht geschlossen', () {
-        expect(
-          () => parse('(1 + 2'),
-          throwsA(isA<SyntaxError>().having((e) => e.position, 'position', 6)),
-        );
-      });
-      test('Klammer zu ohne auf', () => expect(() => parse(')'), syntaxError));
-    },
-    skip: 'Stufe 2 – entfernen, sobald Stufe 1 grün ist',
-  );
+    });
+    test('Klammer zu ohne auf', () => expect(() => parse(')'), syntaxError));
+  });
 
   group('Stufe 3: Vorzeichen und Potenzen', () {
     test('Vorzeichen', () => expect(p('-3'), '(-3)'));

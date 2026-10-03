@@ -45,8 +45,17 @@ class _Parser {
   Expr parseAll() {
     final expr = _expression();
     if (!_check(TokenType.eof)) {
-      throw SyntaxError('Incomplete Input', _current.position);
+      switch (_current.type) {
+        case TokenType.rParen:
+          throw SyntaxError("Unexpected ')'", _current.position);
+        default:
+          throw SyntaxError(
+            "Unexpected '${_current.lexeme}'",
+            _current.position,
+          );
+      }
     }
+
     return expr;
   }
 
@@ -68,11 +77,11 @@ class _Parser {
     while (_check(TokenType.plus) || _check(TokenType.minus)) {
       final op = _advance();
       final right = _term();
-      final operator = op.type == TokenType.plus
-          ? BinaryOperator.add
-          : op.type == TokenType.minus
-          ? BinaryOperator.subtract
-          : throw StateError('Unreachable');
+      final operator = switch (op.type) {
+        TokenType.plus => BinaryOperator.add,
+        TokenType.minus => BinaryOperator.subtract,
+        _ => throw StateError('Unreachable'),
+      };
 
       left = BinaryOp(
         op: operator,
@@ -87,7 +96,26 @@ class _Parser {
 
   // Stufe 2 (in Stufe 1 einfach direkt _primary() zurückgeben)
   Expr _term() {
-    return _primary();
+    var left = _primary();
+
+    while (_check(TokenType.star) || _check(TokenType.slash)) {
+      final op = _advance();
+      final right = _primary();
+      final operator = switch (op.type) {
+        TokenType.star => BinaryOperator.multiply,
+        TokenType.slash => BinaryOperator.divide,
+        _ => throw StateError('Unreachable'),
+      };
+
+      left = BinaryOp(
+        op: operator,
+        left: left,
+        right: right,
+        position: op.position,
+      );
+    }
+
+    return left;
   }
 
   // Stufe 3
@@ -113,8 +141,23 @@ class _Parser {
     } else if (_check(TokenType.number)) {
       final token = _advance();
       return NumberLiteral(lexeme: token.lexeme, position: token.position);
+    } else if (_check(TokenType.lParen)) {
+      final token = _advance();
+
+      if (_current.type == TokenType.rParen) {
+        throw SyntaxError("Empty Brackets ()", _current.position);
+      }
+
+      final expression = _expression();
+
+      _expect(
+        TokenType.rParen,
+        "Expected ')' to close '(' at position ${token.position}",
+      );
+
+      return expression;
     }
 
-    throw SyntaxError('Unerwartetes "${_current.lexeme}"', _current.position);
+    throw SyntaxError("Unexpected '${_current.lexeme}'", _current.position);
   }
 }
