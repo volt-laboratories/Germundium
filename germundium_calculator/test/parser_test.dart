@@ -106,7 +106,7 @@ void main() {
       'Argumentliste nicht beendet',
       () => expect(() => parse('log(2,'), syntaxError),
     );
-  }, skip: 'Stufe 4');
+  });
 
   group('Stufe 5: implizite Multiplikation', () {
     test('Zahl und Variable', () => expect(p('2x'), '(2 * x)'));

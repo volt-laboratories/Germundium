@@ -38,6 +38,27 @@ class _Parser {
     throw SyntaxError(message, _current.position);
   }
 
+  //TODO:Fehlermeldungen überprüfen
+  List<Expr> _arguments() {
+    final startToken = _expect(TokenType.lParen, "Unreacheable: Expected '('");
+    final items = <Expr>[];
+    if (_current.type != TokenType.rParen) {
+      // Sonderfall: leere Liste
+      items.add(_expression()); // erstes Element
+
+      while (_current.type == TokenType.comma) {
+        // jedes weitere hat ein Komma davor
+        _advance();
+        items.add(_expression());
+      }
+    }
+    _expect(
+      TokenType.rParen,
+      "Expected ')' to close '(' at position ${startToken.position}",
+    );
+    return items;
+  }
+
   // ---------------------------------------------------------------------
   // Einstieg (fertig)
   // ---------------------------------------------------------------------
@@ -135,7 +156,7 @@ class _Parser {
 
   // Stufe 3
   Expr _power() {
-    final left = _primary(); // 1. immer zuerst: linke Seite lesen
+    final left = _postfix(); // 1. immer zuerst: linke Seite lesen
 
     if (_current.type == TokenType.caret) {
       final op = _advance(); // 2. nur wenn ^ folgt
@@ -154,7 +175,14 @@ class _Parser {
 
   // Stufe 4
   Expr _postfix() {
-    throw UnimplementedError('TODO: _postfix');
+    var left = _primary();
+
+    while (_current.type == TokenType.bang) {
+      final token = _advance();
+      left = Factorial(operand: left, position: token.position);
+    }
+
+    return left;
   }
 
   // Stufe 1: nur Zahlen. Stufe 2: Klammern. Stufe 4: Variablen, Aufrufe.
@@ -165,6 +193,16 @@ class _Parser {
     } else if (_check(TokenType.number)) {
       final token = _advance();
       return NumberLiteral(lexeme: token.lexeme, position: token.position);
+    } else if (_check(TokenType.identifier)) {
+      final token = _advance();
+      if (_check(TokenType.lParen)) {
+        return Call(
+          name: token.lexeme,
+          args: _arguments(),
+          position: token.position,
+        );
+      }
+      return Variable(name: token.lexeme, position: token.position);
     } else if (_check(TokenType.lParen)) {
       final token = _advance();
 
