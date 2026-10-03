@@ -10,11 +10,16 @@ String p(String s) => parse(s).toString();
 
 Matcher get syntaxError => throwsA(isA<SyntaxError>());
 
-void expectSyntaxError(String input, int position) {
-  expect(
-    () => p(input),
-    throwsA(isA<SyntaxError>().having((e) => e.position, 'position', position)),
+void expectSyntaxError(String input, int position, [String? message]) {
+  var matcher = isA<SyntaxError>().having(
+    (e) => e.position,
+    'position',
+    position,
   );
+  if (message != null) {
+    matcher = matcher.having((e) => e.message, 'message', message);
+  }
+  expect(() => p(input), throwsA(matcher));
 }
 
 void main() {
@@ -122,5 +127,5 @@ void main() {
       'Zahl nach Zahl bleibt ein Fehler',
       () => expect(() => parse('2 3'), syntaxError),
     );
-  }, skip: 'Stufe 5');
+  });
 }

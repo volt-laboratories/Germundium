@@ -1,12 +1,35 @@
+/// Recursive-descent parser for calculator expressions.
+///
+/// Grammar, from lowest to highest precedence:
+///
+/// ```text
+/// expr    := term (('+' | '-') term)*
+/// term    := unary (('*' | '/') unary | <implicit> unary)*
+/// unary   := ('-' | '+') unary | power
+/// power   := postfix ('^' unary)?
+/// postfix := primary '!'*
+/// primary := NUMBER | IDENT | IDENT '(' args ')' | '(' expr ')'
+/// args    := (expr (',' expr)*)?
+/// ```
+///
+/// Each rule is implemented by one method of the parser.
+library;
+
 import 'ast.dart';
 import 'errors.dart';
 import 'token.dart';
 import 'tokenizer.dart';
 
-/// Wandelt [source] in einen Syntaxbaum um.
-/// Wirft [SyntaxError], wenn die Eingabe nicht der Grammatik entspricht.
+/// Parses [source] into an abstract syntax tree.
+///
+/// Throws a [SyntaxError] if [source] does not match the grammar.
+/// The error's position points to the offending token.
 Expr parse(String source) => _Parser(tokenize(source)).parseAll();
 
+/// Turns a list of tokens into an [Expr] tree.
+///
+/// Expects the token list to end with an `eof` token, as produced
+/// by [tokenize]. Each instance parses exactly one input.
 class _Parser {
   _Parser(this._tokens);
 
@@ -14,39 +37,44 @@ class _Parser {
   int _pos = 0;
 
   // ---------------------------------------------------------------------
-  // Hilfsmethoden (fertig)
+  // Helpers
   // ---------------------------------------------------------------------
 
-  /// Das Token, das gerade "dran" ist. Wird NICHT verbraucht.
+  /// The token currently being looked at. Does not consume it.
   Token get _current => _tokens[_pos];
 
-  /// Ist das aktuelle Token vom Typ [type]?
+  /// Whether the current token is of the given [type].
   bool _check(TokenType type) => _current.type == type;
 
-  /// Verbraucht das aktuelle Token und gibt es zurück.
-  /// Bleibt am eof stehen, läuft also nie über das Ende hinaus.
+  /// Consumes the current token and returns it.
+  ///
+  /// Stays on `eof`, so it never runs past the end of the token list.
   Token _advance() {
     final token = _current;
     if (token.type != TokenType.eof) _pos++;
     return token;
   }
 
-  /// Verbraucht ein Token vom Typ [type] oder wirft einen Fehler.
-  /// Praktisch für Pflichtzeichen, z.B. die schließende Klammer.
+  /// Consumes a token of the given [type], or throws a [SyntaxError]
+  /// with [message]. Used for mandatory tokens such as `)`.
   Token _expect(TokenType type, String message) {
     if (_check(type)) return _advance();
     throw SyntaxError(message, _current.position);
   }
 
-  //TODO:Fehlermeldungen überprüfen
+  /// Parses a parenthesized, comma-separated argument list `(a, b, ...)`.
+  ///
+  /// The caller must have checked that the current token is `(`.
+  /// Returns an empty list for `()`.
   List<Expr> _arguments() {
-    final startToken = _expect(TokenType.lParen, "Unreacheable: Expected '('");
+    assert(_check(TokenType.lParen), "_arguments() must start at '('");
+    final startToken = _advance();
     final items = <Expr>[];
     if (_current.type != TokenType.rParen) {
       // Sonderfall: leere Liste
       items.add(_expression()); // erstes Element
 
-      while (_current.type == TokenType.comma) {
+      while (_check(TokenType.comma)) {
         // jedes weitere hat ein Komma davor
         _advance();
         items.add(_expression());
@@ -60,28 +88,23 @@ class _Parser {
   }
 
   // ---------------------------------------------------------------------
-  // Einstieg (fertig)
+  // Entry point
   // ---------------------------------------------------------------------
 
+  /// Parses a complete expression and ensures that no tokens are left
+  /// over, so inputs like `2 3` or `(1))` are rejected.
   Expr parseAll() {
     final expr = _expression();
     if (!_check(TokenType.eof)) {
-      switch (_current.type) {
-        case TokenType.rParen:
-          throw SyntaxError("Unexpected ')'", _current.position);
-        default:
-          throw SyntaxError(
-            "Unexpected '${_current.lexeme}'",
-            _current.position,
-          );
-      }
+      // TODO(before MVP): unify error messages, add "Unmatched ')'" here.
+      throw SyntaxError("Unexpected '${_current.lexeme}'", _current.position);
     }
 
     return expr;
   }
 
   // ---------------------------------------------------------------------
-  // Grammatik-Regeln (DEINE Aufgabe)
+  // Grammar rules
   //
   //   expr     := term (('+' | '-') term)*
   //   term     := unary (('*' | '/') unary | <implizit> unary)*
@@ -91,18 +114,18 @@ class _Parser {
   //   primary  := NUMBER | IDENT | IDENT '(' args ')' | '(' expr ')'
   // ---------------------------------------------------------------------
 
-  // Stufe 1
+  /// `expr := term (('+' | '-') term)*`
+  ///
+  /// Addition and subtraction, left-associative: `1-2-3` is `(1-2)-3`.
   Expr _expression() {
     var left = _term();
 
     while (_check(TokenType.plus) || _check(TokenType.minus)) {
       final op = _advance();
       final right = _term();
-      final operator = switch (op.type) {
-        TokenType.plus => BinaryOperator.add,
-        TokenType.minus => BinaryOperator.subtract,
-        _ => throw StateError('Unreachable'),
-      };
+      final operator = op.type == TokenType.plus
+          ? BinaryOperator.add
+          : BinaryOperator.subtract;
 
       left = BinaryOp(
         op: operator,
@@ -115,37 +138,56 @@ class _Parser {
     return left;
   }
 
-  // Stufe 2 (in Stufe 1 einfach direkt _primary() zurückgeben)
+  /// `term := unary (('*' | '/') unary | <implicit> unary)*`
+  ///
+  /// Multiplication and division, left-associative.
+  ///
+  /// Also handles implicit multiplication when an identifier or `(`
+  /// directly follows a factor: `2x`, `2(3+1)`, `2sin(x)`.
+  /// Numbers never start an implicit factor, so `2 3` stays an error.
+  /// Note that `1/2x` is parsed as `(1/2)*x`, not `1/(2x)`.
   Expr _term() {
     var left = _unary();
 
-    while (_check(TokenType.star) || _check(TokenType.slash)) {
-      final op = _advance();
-      final right = _unary();
-      final operator = switch (op.type) {
-        TokenType.star => BinaryOperator.multiply,
-        TokenType.slash => BinaryOperator.divide,
-        _ => throw StateError('Unreachable _term()'),
-      };
-
-      left = BinaryOp(
-        op: operator,
-        left: left,
-        right: right,
-        position: op.position,
-      );
+    while (true) {
+      if (_check(TokenType.star) || _check(TokenType.slash)) {
+        final op = _advance();
+        final right = _unary();
+        left = BinaryOp(
+          op: op.type == TokenType.star
+              ? BinaryOperator.multiply
+              : BinaryOperator.divide,
+          left: left,
+          right: right,
+          position: op.position,
+        );
+      } else if (_check(TokenType.identifier) || _check(TokenType.lParen)) {
+        final position = _current.position;
+        final right = _unary();
+        left = BinaryOp(
+          op: BinaryOperator.multiply,
+          left: left,
+          right: right,
+          position: position,
+        );
+      } else {
+        break;
+      }
     }
 
     return left;
   }
 
-  // Stufe 3
+  /// `unary := ('-' | '+') unary | power`
+  ///
+  /// Prefix signs. They bind weaker than `^`, so `-2^2` is `-(2^2)`.
+  /// A unary plus creates no node: `+5` is parsed as `5`.
   Expr _unary() {
-    if (_current.type == TokenType.plus) {
+    if (_check(TokenType.plus)) {
       _advance();
 
       return _unary();
-    } else if (_current.type == TokenType.minus) {
+    } else if (_check(TokenType.minus)) {
       final token = _advance();
 
       return Negate(operand: _unary(), position: token.position);
@@ -154,11 +196,14 @@ class _Parser {
     }
   }
 
-  // Stufe 3
+  /// `power := postfix ('^' unary)?`
+  ///
+  /// Exponentiation, right-associative: `2^3^2` is `2^(3^2)`.
+  /// The exponent is parsed with [_unary], which allows `2^-3`.
   Expr _power() {
     final left = _postfix(); // 1. immer zuerst: linke Seite lesen
 
-    if (_current.type == TokenType.caret) {
+    if (_check(TokenType.caret)) {
       final op = _advance(); // 2. nur wenn ^ folgt
       final right = _unary();
       return BinaryOp(
@@ -173,11 +218,13 @@ class _Parser {
     return left; // 3b. kein ^ → linke Seite allein
   }
 
-  // Stufe 4
+  /// `postfix := primary '!'*`
+  ///
+  /// Factorial. Repeated factorials nest: `3!!` is `(3!)!`.
   Expr _postfix() {
     var left = _primary();
 
-    while (_current.type == TokenType.bang) {
+    while (_check(TokenType.bang)) {
       final token = _advance();
       left = Factorial(operand: left, position: token.position);
     }
@@ -185,10 +232,15 @@ class _Parser {
     return left;
   }
 
-  // Stufe 1: nur Zahlen. Stufe 2: Klammern. Stufe 4: Variablen, Aufrufe.
+  /// `primary := NUMBER | IDENT | IDENT '(' args ')' | '(' expr ')'`
+  ///
+  /// Numbers, variables, function calls and parenthesized expressions.
+  /// An identifier directly followed by `(` is always a call, so `x(2)`
+  /// calls `x` instead of multiplying.
   Expr _primary() {
     if (_check(TokenType.eof)) {
-      //TODO: testen ob das überhaupt nötig ist, oder ob _parseAll das schon abfängt
+      // Without this branch, the final throw would report "Unexpected ''",
+      // because the eof token has an empty lexeme.
       throw SyntaxError('Incomplete Input', _current.position);
     } else if (_check(TokenType.number)) {
       final token = _advance();
@@ -206,7 +258,7 @@ class _Parser {
     } else if (_check(TokenType.lParen)) {
       final token = _advance();
 
-      if (_current.type == TokenType.rParen) {
+      if (_check(TokenType.rParen)) {
         throw SyntaxError("Empty Brackets ()", _current.position);
       }
 
