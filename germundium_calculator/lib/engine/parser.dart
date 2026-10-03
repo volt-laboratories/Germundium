@@ -64,7 +64,7 @@ class _Parser {
   //
   //   expr     := term (('+' | '-') term)*
   //   term     := unary (('*' | '/') unary | <implizit> unary)*
-  //   unary    := '-' unary | power
+  //   unary    := ('-' | '+') unary | power
   //   power    := postfix ('^' unary)?
   //   postfix  := primary '!'*
   //   primary  := NUMBER | IDENT | IDENT '(' args ')' | '(' expr ')'
@@ -96,15 +96,15 @@ class _Parser {
 
   // Stufe 2 (in Stufe 1 einfach direkt _primary() zurückgeben)
   Expr _term() {
-    var left = _primary();
+    var left = _unary();
 
     while (_check(TokenType.star) || _check(TokenType.slash)) {
       final op = _advance();
-      final right = _primary();
+      final right = _unary();
       final operator = switch (op.type) {
         TokenType.star => BinaryOperator.multiply,
         TokenType.slash => BinaryOperator.divide,
-        _ => throw StateError('Unreachable'),
+        _ => throw StateError('Unreachable _term()'),
       };
 
       left = BinaryOp(
@@ -120,12 +120,36 @@ class _Parser {
 
   // Stufe 3
   Expr _unary() {
-    throw UnimplementedError('TODO: _unary');
+    if (_current.type == TokenType.plus) {
+      _advance();
+
+      return _unary();
+    } else if (_current.type == TokenType.minus) {
+      final token = _advance();
+
+      return Negate(operand: _unary(), position: token.position);
+    } else {
+      return _power();
+    }
   }
 
   // Stufe 3
   Expr _power() {
-    throw UnimplementedError('TODO: _power');
+    final left = _primary(); // 1. immer zuerst: linke Seite lesen
+
+    if (_current.type == TokenType.caret) {
+      final op = _advance(); // 2. nur wenn ^ folgt
+      final right = _unary();
+      return BinaryOp(
+        // 3a. direkt zurückgeben
+        op: BinaryOperator.power,
+        left: left,
+        right: right,
+        position: op.position,
+      );
+    }
+
+    return left; // 3b. kein ^ → linke Seite allein
   }
 
   // Stufe 4

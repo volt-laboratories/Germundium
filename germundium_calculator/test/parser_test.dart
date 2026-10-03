@@ -10,6 +10,13 @@ String p(String s) => parse(s).toString();
 
 Matcher get syntaxError => throwsA(isA<SyntaxError>());
 
+void expectSyntaxError(String input, int position) {
+  expect(
+    () => p(input),
+    throwsA(isA<SyntaxError>().having((e) => e.position, 'position', position)),
+  );
+}
+
 void main() {
   group('Stufe 1: Zahlen, + und -', () {
     test('einzelne Zahl', () => expect(p('42'), '42'));
@@ -50,7 +57,30 @@ void main() {
     test('-2^2 ist -(2^2)', () => expect(p('-2^2'), '(-(2 ^ 2))'));
     test('Potenz rechtsassoziativ', () => expect(p('2^3^2'), '(2 ^ (3 ^ 2))'));
     test('negativer Exponent', () => expect(p('2^-1'), '(2 ^ (-1))'));
-  }, skip: 'Stufe 3');
+    test('positives Vorzeichen', () => expect(p('+5'), '5'));
+    test('positives Vorzeichen + Summe', () => expect(p('2++5'), '(2 + 5)'));
+  });
+
+  group('Stufe 3: Syntaxfehler', () {
+    // _primary sieht eof
+    test('Potenz ohne Exponent', () => expectSyntaxError('2^', 2));
+    test('Vorzeichen ohne Operand', () => expectSyntaxError('-', 1));
+    test('Operator am Ende', () => expectSyntaxError('2*', 2));
+
+    // _primary sieht unerwartetes Token
+    test('Potenz ohne Basis', () => expectSyntaxError('^2', 0));
+    test('Operator am Anfang', () => expectSyntaxError('*5', 0));
+    test('zwei Operatoren', () => expectSyntaxError('2^*3', 2));
+    test(
+      'zwei Operatoren mit Leerzeichen',
+      () => expectSyntaxError('2 * * 3', 4),
+    );
+    test('leere Klammer', () => expectSyntaxError('()', 1));
+
+    // eof-Check in parseAll: Ausdruck fertig, aber Tokens übrig
+    test('überzählige schließende Klammer', () => expectSyntaxError('2+3)', 3));
+    test('zwei Zahlen ohne Operator', () => expectSyntaxError('2 3', 2));
+  });
 
   group('Stufe 4: Variablen, Fakultät, Funktionsaufrufe', () {
     test('Variable', () => expect(p('x'), 'x'));
