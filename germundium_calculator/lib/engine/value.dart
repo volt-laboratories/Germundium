@@ -17,11 +17,20 @@ final class ExactNumber extends NumberValue {
 
   ExactNumber(this.value);
 
-  factory ExactNumber.fromInt(int n) => throw UnimplementedError();
+  factory ExactNumber.fromInt(int n) => ExactNumber(Rational.fromInt(n));
 
-  factory ExactNumber.parse(String source) => throw UnimplementedError();
+  factory ExactNumber.parse(String source) =>
+      ExactNumber(Rational.parse(source));
 
-  // TODO (stage 1): ==, hashCode, toString
+  @override
+  bool operator ==(Object other) =>
+      other is ExactNumber && other.value == value;
+
+  @override
+  int get hashCode => value.hashCode;
+
+  @override
+  String toString() => 'ExactNumber($value)';
 
   @override
   double toDouble() => throw UnimplementedError();
@@ -38,7 +47,15 @@ final class ApproxNumber extends NumberValue {
 
   ApproxNumber(this.value);
 
-  // TODO (stage 1): ==, hashCode, toString
+  @override
+  bool operator ==(Object other) =>
+      other is ApproxNumber && other.value == value;
+
+  @override
+  int get hashCode => value.hashCode;
+
+  @override
+  String toString() => 'ApproxNumber($value)';
 
   @override
   double toDouble() => throw UnimplementedError();
