@@ -171,7 +171,63 @@ void main() {
         ),
       );
     });
-  }, skip: 'Remove when starting stage 2');
+  });
+
+  const divisionByZeroMessage = 'Division by zero';
+
+  group('Stage 2: edge cases', () {
+    group('subtract keeps operand order with mixed types', () {
+      test('exact - approx', () {
+        final result = subtract(ExactNumber.fromInt(5), ApproxNumber(2.0));
+        expect(result, isA<ApproxNumber>());
+        expect(result, equals(ApproxNumber(3.0)));
+      });
+
+      test('approx - exact', () {
+        final result = subtract(ApproxNumber(5.0), ExactNumber.fromInt(2));
+        expect(result, isA<ApproxNumber>());
+        expect(result, equals(ApproxNumber(3.0)));
+      });
+    });
+
+    group('division by zero throws for every type combination', () {
+      final cases = <(String, Value, Value)>[
+        ('exact / exact zero', ExactNumber.fromInt(1), ExactNumber.fromInt(0)),
+        ('exact / approx zero', ExactNumber.fromInt(1), ApproxNumber(0.0)),
+        ('approx / exact zero', ApproxNumber(1.5), ExactNumber.fromInt(0)),
+        ('approx / approx zero', ApproxNumber(1.5), ApproxNumber(0.0)),
+        ('approx / negative zero', ApproxNumber(1.5), ApproxNumber(-0.0)),
+      ];
+
+      for (final (name, dividend, divisor) in cases) {
+        test(name, () {
+          expect(() => divide(dividend, divisor), throwsA(isA<MathError>()));
+        });
+      }
+    });
+
+    test(
+      'dividing by a tiny non-zero fraction is not a division by zero',
+      () {
+        // 1 / 10^400: not zero, but too small for a double (toDouble() gives 0.0)
+        final tiny = ExactNumber(
+          Rational(BigInt.one, BigInt.from(10).pow(400)),
+        );
+
+        expect(
+          () => divide(ApproxNumber(1.5), tiny),
+          throwsA(
+            isA<MathError>().having(
+              (e) => e.message,
+              'message',
+              isNot(divisionByZeroMessage),
+            ),
+          ),
+        );
+      },
+      skip: 'see task 15: central NaN/Infinity check',
+    );
+  });
 
   // -------------------------------------------------------------------------
   group('Stage 3: power and factorial', () {

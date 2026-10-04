@@ -4,9 +4,7 @@ import 'package:rational/rational.dart'; // bzw. dein Import-Pfad aus dem Test
 //dart run lib/spielwiese.dart
 
 void main() {
-  print(
-    'rational 0.5 == 0.50: ${Rational.parse('0.5') == Rational.parse('0.50')}',
-  );
+  print('rational 0.5 == 0.50: ${Rational.parse('0.0') == Rational.zero}');
   for (final eingabe in [
     'x',
     'sin(x)',

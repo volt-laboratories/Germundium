@@ -9,3 +9,4 @@ export 'token.dart';
 export 'tokenizer.dart' show tokenize;
 export 'ast.dart';
 export 'parser.dart' show parse;
+export 'value.dart';

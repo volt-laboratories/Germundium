@@ -33,7 +33,7 @@ final class ExactNumber extends NumberValue {
   String toString() => 'ExactNumber($value)';
 
   @override
-  double toDouble() => throw UnimplementedError();
+  double toDouble() => value.toDouble();
 
   @override
   bool get isInteger => throw UnimplementedError();
@@ -58,7 +58,7 @@ final class ApproxNumber extends NumberValue {
   String toString() => 'ApproxNumber($value)';
 
   @override
-  double toDouble() => throw UnimplementedError();
+  double toDouble() => value;
 
   @override
   bool get isInteger => throw UnimplementedError();
@@ -71,16 +71,67 @@ final class ApproxNumber extends NumberValue {
 // Operations
 // ---------------------------------------------------------------------------
 
-Value add(Value a, Value b) => throw UnimplementedError();
+NumberValue _combine(
+  NumberValue a,
+  NumberValue b,
+  Rational Function(Rational, Rational) exactOp,
+  double Function(double, double) approxOp,
+) {
+  return switch ((a, b)) {
+    (ExactNumber(value: final x), ExactNumber(value: final y)) => ExactNumber(
+      exactOp(x, y),
+    ),
+    _ => ApproxNumber(approxOp(a.toDouble(), b.toDouble())),
+  };
+}
 
-Value subtract(Value a, Value b) => throw UnimplementedError();
+Value add(Value a, Value b) {
+  return switch ((a, b)) {
+    (NumberValue x, NumberValue y) => _combine(
+      x,
+      y,
+      (l, r) => l + r,
+      (l, r) => l + r,
+    ),
+  };
+}
 
-Value multiply(Value a, Value b) => throw UnimplementedError();
+Value subtract(Value a, Value b) {
+  return switch ((a, b)) {
+    (NumberValue x, NumberValue y) => _combine(
+      x,
+      y,
+      (l, r) => l - r,
+      (l, r) => l - r,
+    ),
+  };
+}
 
-Value divide(Value a, Value b) => throw UnimplementedError();
+Value multiply(Value a, Value b) {
+  return switch ((a, b)) {
+    (NumberValue x, NumberValue y) => _combine(
+      x,
+      y,
+      (l, r) => l * r,
+      (l, r) => l * r,
+    ),
+  };
+}
+
+Value divide(Value a, Value b) {
+  return switch ((a, b)) {
+    (NumberValue x, NumberValue y) => _combine(
+      x,
+      y,
+      (l, r) =>
+          r == Rational.zero ? throw MathError('Division by zero') : l / r,
+      (l, r) => r == 0.0 ? throw MathError('Division by zero') : l / r,
+    ),
+  };
+}
 
 Value power(Value base, Value exponent) => throw UnimplementedError();
 
-Value negate(Value a) => throw UnimplementedError();
+Value negate(Value a) => multiply(a, ExactNumber(Rational.fromInt(-1)));
 
 Value factorial(Value a) => throw UnimplementedError();
