@@ -209,7 +209,7 @@ void main() {
         throwsCalcErrorMentioning('answer'),
       );
     });
-  }, skip: 'Stage 2');
+  });
 
   // -------------------------------------------------------------------------
   group('Stage 3: constants, sqrt, abs, ln, log', () {

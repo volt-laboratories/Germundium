@@ -40,3 +40,7 @@ final class SyntaxError extends CalcError {
 final class MathError extends CalcError {
   const MathError(super.message, [super.position]);
 }
+
+final class EvaluationError extends CalcError {
+  const EvaluationError(super.message, [super.position]);
+}

@@ -58,6 +58,17 @@ final class Arity {
     return min <= count && (max == null || count <= max);
   }
 
+  String get getArgumentString => switch (max) {
+    null => min > 1 ? 'argument' : 'arguments',
+    final m when m == min => min > 1 ? 'argument' : 'arguments',
+    final m =>
+      min > 1
+          ? 'argument'
+          : min == 1 && m > 1
+          ? 'argument/-s'
+          : 'arguments',
+  };
+
   /// Human-readable form for error messages:
   /// `'1'`, `'1 to 2'`, `'at least 1'`.
   @override
@@ -135,26 +146,51 @@ final class FunctionRegistry {
   ///
   /// Throws an [ArgumentError] if two entries share a name.
   FunctionRegistry(Iterable<RegistryEntry> entries) {
-    // TODO (stage 2, task 10)
-    throw UnimplementedError();
+    for (final entry in entries) {
+      if (_entries.containsKey(entry.name)) {
+        throw ArgumentError.value(
+          entries,
+          'entry',
+          'Duplicate entry name: ${entry.name}',
+        );
+      }
+      _entries[entry.name] = entry;
+    }
   }
 
   /// The entry called [name], or `null` if there is none.
   /// Names are case-sensitive.
-  RegistryEntry? lookup(String name) => throw UnimplementedError();
+  RegistryEntry? lookup(String name) => _entries[name];
 
   /// All entries, in registration order.
-  Iterable<RegistryEntry> get entries => throw UnimplementedError();
+  Iterable<RegistryEntry> get entries => _entries.values;
 
   /// All entries of [category], in registration order.
-  Iterable<RegistryEntry> inCategory(FunctionCategory category) =>
-      throw UnimplementedError();
+  Iterable<RegistryEntry> inCategory(FunctionCategory category) => _entries
+      .entries
+      .where((e) => e.value.category == category)
+      .map((e) => e.value);
 
   /// Calls the function [name] with [args].
   ///
   /// This is the ONE place where the argument count is checked.
   /// Throws a [CalcError] if [name] is unknown, is a constant, or
   /// [args] has the wrong length.
-  Value invoke(String name, List<Value> args, EvalContext context) =>
-      throw UnimplementedError();
+  //TODO: Fehlerfälle richtig benennen
+  Value invoke(String name, List<Value> args, EvalContext context) {
+    switch (lookup(name)) {
+      case null:
+        throw EvaluationError('$name does not exist as function or variable');
+      case ConstantEntry():
+        throw EvaluationError('constant $name cannot be invoked as function');
+      case FunctionEntry(:final arity, :final evaluate):
+        if (!arity.accepts(args.length)) {
+          throw EvaluationError(
+            '$name expects $arity ${arity.getArgumentString}, got ${args.length}',
+          );
+        }
+
+        return evaluate(args, context);
+    }
+  }
 }
