@@ -313,7 +313,7 @@ void main() {
         expect(() => power(ApproxNumber(10.0), exact(400)), throwsMathError);
       });
     });
-  }, skip: 'Remove when starting stage 3');
+  });
 
   // -------------------------------------------------------------------------
   group('Stage 4: helpers', () {
