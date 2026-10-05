@@ -335,7 +335,7 @@ void main() {
       expect(exact(7).toIntOrNull(), equals(7));
       expect(frac(1, 2).toIntOrNull(), isNull);
     });
-  }, skip: 'Remove when starting stage 4');
+  });
 
   // -------------------------------------------------------------------------
   group('Own tests (task 18)', () {
