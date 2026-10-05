@@ -40,20 +40,32 @@ final class Arity {
   // TODO (stage 1, task 7): add asserts to the initializer lists
   // (min must not be negative, max must not be smaller than min).
   const Arity.exactly(int n)
-      : min = n,
-        max = n;
+    : assert(n >= 0, 'argument count must not be negative'),
+      min = n,
+      max = n;
 
-  const Arity.range(this.min, int this.max);
+  const Arity.range(this.min, int this.max)
+    : assert(min >= 0, 'min must not be negative'),
+      assert(min <= max, 'max must not be smaller than min');
 
-  const Arity.atLeast(this.min) : max = null;
+  const Arity.atLeast(this.min)
+    : assert(min >= 0, 'min must not be negative'),
+      max = null;
 
   /// Whether a call with [count] arguments is allowed.
-  bool accepts(int count) => throw UnimplementedError();
+  bool accepts(int count) {
+    final max = this.max;
+    return min <= count && (max == null || count <= max);
+  }
 
   /// Human-readable form for error messages:
   /// `'1'`, `'1 to 2'`, `'at least 1'`.
   @override
-  String toString() => throw UnimplementedError();
+  String toString() => switch (max) {
+    null => 'at least $min',
+    final m when m == min => '$min',
+    final m => '$min to $m',
+  };
 }
 
 /// Signature every built-in function implements.

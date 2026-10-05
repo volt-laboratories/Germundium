@@ -6,14 +6,7 @@ import 'package:rational/rational.dart'; // bzw. dein Import-Pfad aus dem Test
 void main() {
   final double x = 2.0;
   print('double tests: ${x == x.roundToDouble()}');
-  for (final eingabe in [
-    'x',
-    'sin(x)',
-    'log(2, 8)',
-    'max(1, 2+3)',
-    'rand()',
-    'sin(',
-  ]) {
+  for (final eingabe in ['pi', 'pi()', '2pi', 'sin', 'pi(2)']) {
     try {
       print('$eingabe  →  ${parse(eingabe)}');
     } on CalcError catch (e) {
