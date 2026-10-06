@@ -48,12 +48,35 @@ FunctionRegistry standardRegistry() => FunctionRegistry([
   ),
 
   // --- Trigonometry ------------------------------------------------------
-  // TODO (stage 4): sin, cos, tan
+  FunctionEntry(
+    name: 'sin',
+    symbol: 'sin( )',
+    category: FunctionCategory.trigonometry,
+    arity: Arity.exactly(1),
+    evaluate: _sin,
+  ),
+  FunctionEntry(
+    name: 'cos',
+    symbol: 'cos( )',
+    category: FunctionCategory.trigonometry,
+    arity: Arity.exactly(1),
+    evaluate: _cos,
+  ),
+  FunctionEntry(
+    name: 'tan',
+    symbol: 'tan( )',
+    category: FunctionCategory.trigonometry,
+    arity: Arity.exactly(1),
+    evaluate: _tan,
+  ),
 ]);
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+/// 90 and 180 as exact rationals, used for the pole check in [_tan].
+final _r90 = Rational.fromInt(90);
+final _r180 = Rational.fromInt(180);
 
 /// Returns argument [index] as a number.
 ///
@@ -64,7 +87,17 @@ NumberValue _numberArg(List<Value> args, int index) => switch (args[index]) {
 };
 
 /// Converts [angle] to radians according to [mode].
-double _toRadians(double angle, AngleMode mode) => throw UnimplementedError();
+double _toRadians(double angle, AngleMode mode) => switch (mode) {
+  AngleMode.degrees => angle / 180 * math.pi,
+  AngleMode.radians => angle,
+};
+
+/// Converts [angle] from radians to the unit of [mode].
+/// Counterpart of [_toRadians], used for results of asin, acos, atan.
+double _fromRadians(double angle, AngleMode mode) => switch (mode) {
+  AngleMode.degrees => angle / math.pi * 180,
+  AngleMode.radians => angle,
+};
 
 // ---------------------------------------------------------------------------
 // Basic
@@ -171,11 +204,29 @@ Value _log(List<Value> args, EvalContext context) {
 // Trigonometry
 // ---------------------------------------------------------------------------
 
-Value _sin(List<Value> args, EvalContext context) => throw UnimplementedError();
+Value _sin(List<Value> args, EvalContext context) => ApproxNumber(
+  math.sin(_toRadians(_numberArg(args, 0).toDouble(), context.angleMode)),
+);
 
-Value _cos(List<Value> args, EvalContext context) => throw UnimplementedError();
+Value _cos(List<Value> args, EvalContext context) => ApproxNumber(
+  math.cos(_toRadians(_numberArg(args, 0).toDouble(), context.angleMode)),
+);
 
-Value _tan(List<Value> args, EvalContext context) => throw UnimplementedError();
+Value _tan(List<Value> args, EvalContext context) {
+  final val = _numberArg(args, 0);
+  final tanNotDefined =
+      context.angleMode == AngleMode.degrees &&
+      switch (val) {
+        ExactNumber n => n.value % _r180 == _r90,
+        ApproxNumber n => n.value % 180 == 90,
+      };
+
+  if (tanNotDefined) {
+    throw MathError('tan is not defined');
+  }
+
+  return ApproxNumber(math.tan(_toRadians(val.toDouble(), context.angleMode)));
+}
 
 // ---------------------------------------------------------------------------
 // Stage 5 (bonus)

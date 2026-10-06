@@ -444,7 +444,66 @@ void main() {
     test('tan(180°) is fine', () {
       expectNumber(reg.invoke('tan', [ex(180)], deg), 0);
     });
-  }, skip: 'Stage 4');
+  });
+
+  group('Own tests: tan poles', () {
+    late FunctionRegistry reg;
+    setUp(() => reg = standardRegistry());
+
+    test('odd multiples of 90 are poles in DEG', () {
+      for (final angle in [90, 270, 450, -90, -270, -450]) {
+        expect(
+          () => reg.invoke('tan', [ex(angle)], deg),
+          throwsMathError,
+          reason: 'tan($angle°) should be undefined',
+        );
+      }
+    });
+
+    test('even multiples of 90 are not poles in DEG', () {
+      for (final angle in [0, 180, 360, -180, -360]) {
+        expectNumber(reg.invoke('tan', [ex(angle)], deg), 0);
+      }
+    });
+
+    test('huge angles are reduced exactly', () {
+      // 90 + 1000000 * 180: still a pole, no precision loss.
+      expect(
+        () => reg.invoke('tan', [ex(90 + 1000000 * 180)], deg),
+        throwsMathError,
+      );
+    });
+
+    test('fractions: 180/2 is a pole, 181/2 is not', () {
+      expect(() => reg.invoke('tan', [frac(180, 2)], deg), throwsMathError);
+      expect(reg.invoke('tan', [frac(181, 2)], deg), isA<ApproxNumber>());
+    });
+
+    test('ordinary values in DEG', () {
+      expectNumber(reg.invoke('tan', [ex(45)], deg), 1);
+      expectNumber(reg.invoke('tan', [ex(-45)], deg), -1);
+      expectNumber(reg.invoke('tan', [ex(89)], deg), 57.28996163075914);
+    });
+
+    test('90 and 270 are not poles in RAD', () {
+      expectNumber(reg.invoke('tan', [ex(90)], rad), math.tan(90));
+      expectNumber(reg.invoke('tan', [ex(270)], rad), math.tan(270));
+    });
+
+    test('approximate 90.0 is a pole in DEG', () {
+      expect(() => reg.invoke('tan', [ap(90.0)], deg), throwsMathError);
+      expect(() => reg.invoke('tan', [ap(-90.0)], deg), throwsMathError);
+    });
+
+    test('known limitation: a double just next to 90 is not detected', () {
+      // 90.00000000000001 is not exactly 90, so no pole is detected and
+      // tan returns a huge finite value instead of an error.
+      expect(
+        reg.invoke('tan', [ap(90.00000000000001)], deg),
+        isA<ApproxNumber>(),
+      );
+    });
+  });
 
   // -------------------------------------------------------------------------
   group('Stage 5 (bonus): exact special values', () {
