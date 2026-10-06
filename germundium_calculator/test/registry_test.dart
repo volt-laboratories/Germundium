@@ -545,5 +545,5 @@ void main() {
       final square = ExactNumber(Rational(root * root));
       expect(reg.invoke('sqrt', [square], rad), ExactNumber(Rational(root)));
     });
-  }, skip: 'Stage 5 (bonus)');
+  });
 }
