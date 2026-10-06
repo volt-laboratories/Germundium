@@ -328,7 +328,67 @@ void main() {
         throwsCalcErrorMentioning('log'),
       );
     });
-  }, skip: 'Stage 3');
+  });
+
+  group('Stage 3: results outside the double range', () {
+    final registry = standardRegistry();
+    final context = EvalContext();
+
+    // 2^1100 is far beyond the double range (~2^1024) but well below
+    // maxExactBits (100000), so it is a valid ExactNumber.
+    final huge = BigInt.two.pow(1100);
+
+    ExactNumber exact(BigInt numerator, [BigInt? denominator]) =>
+        ExactNumber(Rational(numerator, denominator ?? BigInt.one));
+
+    test('ln of a number beyond the double range is a MathError', () {
+      // toDouble() overflows to Infinity, ln(Infinity) = Infinity
+      expect(
+        () => registry.invoke('ln', [exact(huge)], context),
+        throwsA(isA<MathError>()),
+      );
+    });
+
+    test('ln of a positive number below the double range is a MathError', () {
+      // 1 / 2^1100 is positive, so the domain check passes,
+      // but toDouble() underflows to 0.0 and ln(0.0) = -Infinity
+      expect(
+        () => registry.invoke('ln', [exact(BigInt.one, huge)], context),
+        throwsA(isA<MathError>()),
+      );
+    });
+
+    test('sqrt of a non-square beyond the double range is a MathError', () {
+      expect(
+        () => registry.invoke('sqrt', [exact(huge + BigInt.one)], context),
+        throwsA(isA<MathError>()),
+      );
+    });
+
+    test('ApproxNumber rejects NaN and both infinities', () {
+      expect(() => ApproxNumber(double.nan), throwsA(isA<MathError>()));
+      expect(() => ApproxNumber(double.infinity), throwsA(isA<MathError>()));
+      expect(
+        () => ApproxNumber(double.negativeInfinity),
+        throwsA(isA<MathError>()),
+      );
+    });
+
+    test(
+      'log with a base beyond the double range is wrong but finite',
+      () {
+        // ln(base) overflows to Infinity, ln(8) / Infinity = 0.0.
+        // The real result is 3 / 1100 ≈ 0.0027. A NaN/Infinity check
+        // cannot detect wrong finite results.
+        final result = registry.invoke('log', [
+          exact(BigInt.from(8)),
+          exact(huge),
+        ], context);
+        expect((result as ApproxNumber).value, closeTo(3 / 1100, 1e-12));
+      },
+      skip: 'Known limitation: base is converted to double before ln',
+    );
+  });
 
   // -------------------------------------------------------------------------
   group('Stage 4: trigonometry and DEG / RAD', () {

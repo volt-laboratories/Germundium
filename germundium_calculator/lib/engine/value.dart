@@ -113,7 +113,7 @@ final class ApproxNumber extends NumberValue {
       throw MathError('Result is not a real number');
     }
     if (value.isInfinite) {
-      throw MathError('Result too large');
+      throw MathError('Result is out of range');
     }
     return ApproxNumber._(value);
   }
