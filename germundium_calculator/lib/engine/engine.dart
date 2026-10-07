@@ -10,3 +10,6 @@ export 'tokenizer.dart' show tokenize;
 export 'ast.dart';
 export 'parser.dart' show parse;
 export 'value.dart';
+export 'evaluator.dart';
+export 'builtins.dart';
+export 'registry.dart';

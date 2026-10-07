@@ -1,0 +1,123 @@
+// Skeleton for stage 5: the evaluator.
+//
+// The public API (`calculate`, `Evaluator`, `Evaluator.evaluate`) is fixed
+// by test/evaluator_test.dart. The private helpers are a suggestion:
+// rename, merge or delete them as you like. Every body is yours to write.
+
+import 'ast.dart';
+import 'builtins.dart';
+import 'errors.dart';
+import 'parser.dart';
+import 'registry.dart';
+import 'value.dart';
+
+// ---------------------------------------------------------------------------
+// Entry point for the app
+// ---------------------------------------------------------------------------
+
+/// Parses and evaluates [input] in one step.
+///
+/// This is what the app will call when the user presses `=` (phase 3).
+/// Uses the built-in registry from [standardRegistry] unless [registry]
+/// is given.
+///
+/// Throws a [SyntaxError] if [input] cannot be parsed (see [parse]), and
+/// another [CalcError] if it cannot be evaluated. Either way,
+/// [CalcError.position] points into [input].
+Value calculate(
+  String input, {
+  EvalContext context = const EvalContext(),
+  FunctionRegistry? registry,
+}) {
+  // TODO (stage 6)
+  throw UnimplementedError();
+}
+
+// ---------------------------------------------------------------------------
+// Evaluator
+// ---------------------------------------------------------------------------
+
+/// Computes the [Value] of an [Expr] tree.
+///
+/// The evaluator does almost no math itself: operators are delegated to
+/// the functions in value.dart, names to the [registry]. Its own jobs are
+/// walking the tree, resolving names, and attaching positions to errors.
+///
+/// It keeps no state between two calls of [evaluate]: the same tree gives
+/// the same result for the same registry and context.
+final class Evaluator {
+  Evaluator({required this.registry, this.context = const EvalContext()});
+
+  /// Which constants and functions exist.
+  final FunctionRegistry registry;
+
+  /// Settings such as DEG / RAD, passed on to every function call.
+  final EvalContext context;
+
+  // Stage 6 will add a third field here: the environment with user
+  // variables, history references and user-defined functions.
+
+  /// Computes the value of [expr].
+  ///
+  /// Throws a [CalcError] whose [CalcError.position] points at the
+  /// innermost node where the problem occurred.
+  Value evaluate(Expr expr) {
+    // TODO (stage 1): one exhaustive `switch` over the node type,
+    // each case delegates to one of the helpers below. No `default`.
+    throw UnimplementedError();
+  }
+
+  // -------------------------------------------------------------------------
+  // Stage 1: numbers and operators
+  // -------------------------------------------------------------------------
+
+  /// `42`, `0.1`: the lexeme becomes an exact number.
+  Value _number(NumberLiteral node) => throw UnimplementedError();
+
+  /// `-x`
+  Value _negate(Negate node) => throw UnimplementedError();
+
+  /// `x!`
+  Value _factorial(Factorial node) => throw UnimplementedError();
+
+  /// `a + b`, `a - b`, `a * b`, `a / b`, `a ^ b`, and implicit `2x`.
+  Value _binary(BinaryOp node) => throw UnimplementedError();
+
+  // -------------------------------------------------------------------------
+  // Stage 2: error positions
+  // -------------------------------------------------------------------------
+
+  /// Runs [compute] and returns its result.
+  ///
+  /// If [compute] throws a [CalcError] that has no position yet, throws
+  /// the same kind of error again, with [position] filled in. A
+  /// [CalcError] that already has a position, and anything that is not a
+  /// [CalcError], passes through unchanged.
+  Value _at(int position, Value Function() compute) =>
+      throw UnimplementedError();
+
+  /// A copy of [error] with [position], same type and same message.
+  ///
+  /// (Alternative: a method `withPosition` on [CalcError] itself.
+  /// Your decision, see the task file.)
+  CalcError _withPosition(CalcError error, int position) =>
+      throw UnimplementedError();
+
+  // -------------------------------------------------------------------------
+  // Stage 3: names
+  // -------------------------------------------------------------------------
+
+  /// `pi`, `foo`, or `sin` without parentheses.
+  Value _variable(Variable node) => throw UnimplementedError();
+
+  // -------------------------------------------------------------------------
+  // Stage 4 and 5: calls
+  // -------------------------------------------------------------------------
+
+  /// `sin(x)`, `log(x, b)`, `rand()`, and (stage 5) `pi(2)`.
+  Value _call(Call node) => throw UnimplementedError();
+
+  /// Stage 5: a constant used with parentheses, `pi(2)` means `pi * 2`.
+  Value _constantTimes(ConstantEntry entry, Call node) =>
+      throw UnimplementedError();
+}
