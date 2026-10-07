@@ -62,9 +62,14 @@ final class Evaluator {
   /// Throws a [CalcError] whose [CalcError.position] points at the
   /// innermost node where the problem occurred.
   Value evaluate(Expr expr) {
-    // TODO (stage 1): one exhaustive `switch` over the node type,
-    // each case delegates to one of the helpers below. No `default`.
-    throw UnimplementedError();
+    return switch (expr) {
+      (NumberLiteral number) => _number(number),
+      (Negate negate) => _negate(negate),
+      (Factorial factorial) => _factorial(factorial),
+      (BinaryOp binaryOp) => _binary(binaryOp),
+      (Variable variable) => throw UnimplementedError(),
+      (Call call) => throw UnimplementedError(),
+    };
   }
 
   // -------------------------------------------------------------------------
@@ -72,16 +77,24 @@ final class Evaluator {
   // -------------------------------------------------------------------------
 
   /// `42`, `0.1`: the lexeme becomes an exact number.
-  Value _number(NumberLiteral node) => throw UnimplementedError();
+  Value _number(NumberLiteral node) => ExactNumber.parse(node.lexeme);
 
   /// `-x`
-  Value _negate(Negate node) => throw UnimplementedError();
+  Value _negate(Negate node) => negate(evaluate(node.operand));
 
   /// `x!`
-  Value _factorial(Factorial node) => throw UnimplementedError();
+  Value _factorial(Factorial node) => factorial(evaluate(node.operand));
 
   /// `a + b`, `a - b`, `a * b`, `a / b`, `a ^ b`, and implicit `2x`.
-  Value _binary(BinaryOp node) => throw UnimplementedError();
+  Value _binary(BinaryOp node) => node.op == BinaryOperator.add
+      ? add(evaluate(node.left), evaluate(node.right))
+      : node.op == BinaryOperator.subtract
+      ? subtract(evaluate(node.left), evaluate(node.right))
+      : node.op == BinaryOperator.multiply
+      ? multiply(evaluate(node.left), evaluate(node.right))
+      : node.op == BinaryOperator.divide
+      ? divide(evaluate(node.left), evaluate(node.right))
+      : power(evaluate(node.left), evaluate(node.right));
 
   // -------------------------------------------------------------------------
   // Stage 2: error positions
