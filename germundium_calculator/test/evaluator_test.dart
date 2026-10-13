@@ -265,7 +265,7 @@ void main() {
         throwsCalcError<MathError>(at: tree.position),
       );
     });
-  }, skip: 'Stage 2');
+  });
 
   // -------------------------------------------------------------------------
   group('Stage 3: names', () {

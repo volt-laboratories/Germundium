@@ -62,14 +62,17 @@ final class Evaluator {
   /// Throws a [CalcError] whose [CalcError.position] points at the
   /// innermost node where the problem occurred.
   Value evaluate(Expr expr) {
-    return switch (expr) {
-      (NumberLiteral number) => _number(number),
-      (Negate negate) => _negate(negate),
-      (Factorial factorial) => _factorial(factorial),
-      (BinaryOp binaryOp) => _binary(binaryOp),
-      (Variable variable) => throw UnimplementedError(),
-      (Call call) => throw UnimplementedError(),
-    };
+    return _at(
+      expr.position,
+      () => switch (expr) {
+        (NumberLiteral number) => _number(number),
+        (Negate negate) => _negate(negate),
+        (Factorial factorial) => _factorial(factorial),
+        (BinaryOp binaryOp) => _binary(binaryOp),
+        (Variable variable) => _variable(variable),
+        (Call call) => _call(call),
+      },
+    );
   }
 
   // -------------------------------------------------------------------------
@@ -86,15 +89,24 @@ final class Evaluator {
   Value _factorial(Factorial node) => factorial(evaluate(node.operand));
 
   /// `a + b`, `a - b`, `a * b`, `a / b`, `a ^ b`, and implicit `2x`.
-  Value _binary(BinaryOp node) => node.op == BinaryOperator.add
-      ? add(evaluate(node.left), evaluate(node.right))
-      : node.op == BinaryOperator.subtract
-      ? subtract(evaluate(node.left), evaluate(node.right))
-      : node.op == BinaryOperator.multiply
-      ? multiply(evaluate(node.left), evaluate(node.right))
-      : node.op == BinaryOperator.divide
-      ? divide(evaluate(node.left), evaluate(node.right))
-      : power(evaluate(node.left), evaluate(node.right));
+  Value _binary(BinaryOp node) {
+    return switch (node.op) {
+      BinaryOperator.add => add(evaluate(node.left), evaluate(node.right)),
+      BinaryOperator.subtract => subtract(
+        evaluate(node.left),
+        evaluate(node.right),
+      ),
+      BinaryOperator.multiply => multiply(
+        evaluate(node.left),
+        evaluate(node.right),
+      ),
+      BinaryOperator.divide => divide(
+        evaluate(node.left),
+        evaluate(node.right),
+      ),
+      BinaryOperator.power => power(evaluate(node.left), evaluate(node.right)),
+    };
+  }
 
   // -------------------------------------------------------------------------
   // Stage 2: error positions
@@ -106,15 +118,27 @@ final class Evaluator {
   /// the same kind of error again, with [position] filled in. A
   /// [CalcError] that already has a position, and anything that is not a
   /// [CalcError], passes through unchanged.
-  Value _at(int position, Value Function() compute) =>
-      throw UnimplementedError();
+  Value _at(int position, Value Function() compute) {
+    try {
+      return compute();
+    } on CalcError catch (e) {
+      if (e.position == null) {
+        throw _withPosition(e, position);
+      } else {
+        rethrow;
+      }
+    }
+  }
 
   /// A copy of [error] with [position], same type and same message.
   ///
   /// (Alternative: a method `withPosition` on [CalcError] itself.
   /// Your decision, see the task file.)
-  CalcError _withPosition(CalcError error, int position) =>
-      throw UnimplementedError();
+  CalcError _withPosition(CalcError error, int position) => switch (error) {
+    SyntaxError e => SyntaxError(e.message, position),
+    MathError e => MathError(e.message, position),
+    EvaluationError e => EvaluationError(e.message, position),
+  };
 
   // -------------------------------------------------------------------------
   // Stage 3: names
