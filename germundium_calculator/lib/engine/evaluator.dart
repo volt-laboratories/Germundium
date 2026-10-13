@@ -145,7 +145,13 @@ final class Evaluator {
   // -------------------------------------------------------------------------
 
   /// `pi`, `foo`, or `sin` without parentheses.
-  Value _variable(Variable node) => throw UnimplementedError();
+  Value _variable(Variable node) => switch (registry.lookup(node.name)) {
+    null => throw EvaluationError("Unknown name '${node.name}'"),
+    ConstantEntry c => c.value,
+    FunctionEntry _ => throw EvaluationError(
+      "'${node.name}' is a function, write ${node.name}(...)",
+    ),
+  };
 
   // -------------------------------------------------------------------------
   // Stage 4 and 5: calls

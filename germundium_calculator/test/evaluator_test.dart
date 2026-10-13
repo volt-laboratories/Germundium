@@ -291,7 +291,7 @@ void main() {
       expect(() => eval('twice'), throwsCalcError(at: 0, mentioning: 'twice'));
       expect(() => eval('3twice'), throwsCalcError(at: 1, mentioning: 'twice'));
     });
-  }, skip: 'Stage 3');
+  });
 
   // -------------------------------------------------------------------------
   group('Stage 4: function calls', () {
