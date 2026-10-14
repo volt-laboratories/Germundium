@@ -29,8 +29,13 @@ Value calculate(
   EvalContext context = const EvalContext(),
   FunctionRegistry? registry,
 }) {
-  // TODO (stage 6)
-  throw UnimplementedError();
+  final p = parse(input);
+  final e = Evaluator(
+    registry: registry ?? standardRegistry(),
+    context: context,
+  );
+
+  return e.evaluate(p);
 }
 
 // ---------------------------------------------------------------------------

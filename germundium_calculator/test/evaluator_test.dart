@@ -415,59 +415,52 @@ void main() {
   });
 
   // -------------------------------------------------------------------------
-  group(
-    'Stage 6: calculate() with the built-in registry',
-    () {
-      test('calculate parses and evaluates in one step', () {
-        expect(calculate('1 + 2'), ex(3));
-        expect(calculate('0.1 + 0.2'), ExactNumber.parse('0.3'));
-      });
+  group('Stage 6: calculate() with the built-in registry', () {
+    test('calculate parses and evaluates in one step', () {
+      expect(calculate('1 + 2'), ex(3));
+      expect(calculate('0.1 + 0.2'), ExactNumber.parse('0.3'));
+    });
 
-      test('syntax errors from the parser pass through unchanged', () {
-        final direct = errorOf(() => parse('1 +'));
-        final viaCalculate = errorOf(() => calculate('1 +'));
-        expect(viaCalculate, isA<SyntaxError>());
-        expect(viaCalculate.message, direct.message);
-        expect(viaCalculate.position, direct.position);
-      });
+    test('syntax errors from the parser pass through unchanged', () {
+      final direct = errorOf(() => parse('1 +'));
+      final viaCalculate = errorOf(() => calculate('1 +'));
+      expect(viaCalculate, isA<SyntaxError>());
+      expect(viaCalculate.message, direct.message);
+      expect(viaCalculate.position, direct.position);
+    });
 
-      test('a custom registry can be passed in', () {
-        expect(calculate('answer(2)', registry: registry), ex(84));
-      });
+    test('a custom registry can be passed in', () {
+      expect(calculate('answer(2)', registry: registry), ex(84));
+    });
 
-      test('the default registry knows pi and sqrt', () {
-        expectNumber(calculate('2pi'), 2 * math.pi);
-        expect(calculate('sqrt(16)'), ex(4));
-      });
+    test('the default registry knows pi and sqrt', () {
+      expectNumber(calculate('2pi'), 2 * math.pi);
+      expect(calculate('sqrt(16)'), ex(4));
+    });
 
-      test('pi(2) is the same as 2pi', () {
-        expect(calculate('pi(2)'), calculate('2pi'));
-      });
+    test('pi(2) is the same as 2pi', () {
+      expect(calculate('pi(2)'), calculate('2pi'));
+    });
 
-      test('the default context is radians', () {
-        expectNumber(calculate('cos(pi)'), -1);
-      });
+    test('the default context is radians', () {
+      expectNumber(calculate('cos(pi)'), -1);
+    });
 
-      test('the context reaches the built-ins', () {
-        expectNumber(calculate('sin(30)', context: deg), 0.5);
-      });
+    test('the context reaches the built-ins', () {
+      expectNumber(calculate('sin(30)', context: deg), 0.5);
+    });
 
-      test('a MathError from a built-in points at the call', () {
-        expect(
-          () => calculate('1 + sqrt(-1)'),
-          throwsCalcError<MathError>(at: 4),
-        );
-      });
+    test('a MathError from a built-in points at the call', () {
+      expect(
+        () => calculate('1 + sqrt(-1)'),
+        throwsCalcError<MathError>(at: 4),
+      );
+    });
 
-      test('a built-in function without parentheses', () {
-        expect(
-          () => calculate('sin'),
-          throwsCalcError(at: 0, mentioning: 'sin'),
-        );
-      });
-    },
-    skip: 'Stage 6 (needs stage 4 to be finished)',
-  );
+    test('a built-in function without parentheses', () {
+      expect(() => calculate('sin'), throwsCalcError(at: 0, mentioning: 'sin'));
+    });
+  });
 
   // -------------------------------------------------------------------------
   group('Your own tests', () {
