@@ -16,8 +16,6 @@
 import 'dart:math' as math;
 
 import 'package:germundium_calculator/engine/engine.dart';
-import 'package:germundium_calculator/engine/evaluator.dart';
-import 'package:germundium_calculator/engine/registry.dart';
 import 'package:rational/rational.dart';
 import 'package:test/test.dart';
 
@@ -464,7 +462,11 @@ void main() {
 
   // -------------------------------------------------------------------------
   group('Your own tests', () {
-    // At least three tests of your own (see the task file), for example
-    // the one that records your decision for twice(1/0, 2).
+    test('-3!', () {
+      expectNumber(calculate('-3!'), -6);
+    });
+    test('(2 - 5)!', () {
+      expect(() => calculate('(2 - 5)!'), throwsCalcError<MathError>(at: 7));
+    });
   });
 }

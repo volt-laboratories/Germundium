@@ -13,3 +13,4 @@ export 'value.dart';
 export 'evaluator.dart';
 export 'builtins.dart';
 export 'registry.dart';
+export 'evaluator.dart';

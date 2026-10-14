@@ -10,10 +10,30 @@ import 'errors.dart';
 import 'parser.dart';
 import 'registry.dart';
 import 'value.dart';
+import 'environment.dart';
+import 'statement.dart';
 
 // ---------------------------------------------------------------------------
 // Entry point for the app
 // ---------------------------------------------------------------------------
+
+/// Parses and executes one line of input in one step.
+///
+/// This is what the app will call when the user presses `=` (phase 3).
+/// [environment] holds everything the user defined so far. The returned
+/// [Outcome] carries the new one; [environment] itself never changes.
+///
+/// Uses the built-in registry from [standardRegistry] unless [registry]
+/// is given.
+Outcome run(
+  String input, {
+  Environment environment = Environment.empty,
+  EvalContext context = const EvalContext(),
+  FunctionRegistry? registry,
+}) {
+  // TODO (step 7)
+  throw UnimplementedError();
+}
 
 /// Parses and evaluates [input] in one step.
 ///
@@ -51,13 +71,33 @@ Value calculate(
 /// It keeps no state between two calls of [evaluate]: the same tree gives
 /// the same result for the same registry and context.
 final class Evaluator {
-  Evaluator({required this.registry, this.context = const EvalContext()});
+  Evaluator({
+    required this.registry,
+    this.context = const EvalContext(),
+    this.environment = Environment.empty,
+  });
+
+  /// Everything the user defined: variables, functions and `ans`.
+  ///
+  /// The evaluator never changes it. [execute] returns a new one instead.
+  final Environment environment;
 
   /// Which constants and functions exist.
   final FunctionRegistry registry;
 
   /// Settings such as DEG / RAD, passed on to every function call.
   final EvalContext context;
+
+  /// Executes one line of input and returns what happened, together
+  /// with the new environment.
+  ///
+  /// Throws a [CalcError] with a position if the line cannot be executed.
+  /// Nothing is stored in that case.
+  Outcome execute(Statement statement) {
+    // TODO (step 4): one exhaustive switch over the statement type,
+    // each case delegates to one of the helpers. No `default`.
+    throw UnimplementedError();
+  }
 
   // Stage 6 will add a third field here: the environment with user
   // variables, history references and user-defined functions.

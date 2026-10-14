@@ -19,6 +19,16 @@ import 'ast.dart';
 import 'errors.dart';
 import 'token.dart';
 import 'tokenizer.dart';
+import 'statement.dart';
+
+/// Parses one complete line of input: an expression (`2 + 3`), an
+/// assignment (`x = 3`) or a function definition (`f(x) = x^2`).
+///
+/// Throws a [SyntaxError] if [input] is none of these.
+Statement parseStatement(String input) {
+  // TODO (step 3)
+  throw UnimplementedError();
+}
 
 /// Parses [source] into an abstract syntax tree.
 ///
