@@ -77,8 +77,7 @@ final class Environment {
 
   /// The binding of [name], or `null` if the user has not defined it.
   Binding? lookup(String name) {
-    // TODO (step 1)
-    throw UnimplementedError();
+    return _bindings[name];
   }
 
   /// A new environment in which [name] has [binding].
@@ -86,15 +85,11 @@ final class Environment {
   /// If [name] already exists, its old binding is replaced, whatever kind
   /// it was: one name has one meaning. This environment is not changed.
   Environment define(String name, Binding binding) {
-    // TODO (step 1)
-    throw UnimplementedError();
+    return Environment._({..._bindings, name: binding});
   }
 
   /// Every defined name, each once, in the order of their first definition.
-  Iterable<String> get names {
-    // TODO (step 1)
-    throw UnimplementedError();
-  }
+  Iterable<String> get names => _bindings.keys;
 
   @override
   String toString() => 'Environment(${_bindings.keys.join(', ')})';
