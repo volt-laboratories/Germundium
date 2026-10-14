@@ -372,7 +372,7 @@ void main() {
       // A StateError is a bug in our code, not a mistake of the user.
       expect(() => eval('broken()'), throwsStateError);
     });
-  }, skip: 'Stage 4');
+  });
 
   // -------------------------------------------------------------------------
   group('Stage 5: constants with parentheses', () {
