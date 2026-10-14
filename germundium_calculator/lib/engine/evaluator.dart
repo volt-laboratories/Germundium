@@ -160,15 +160,18 @@ final class Evaluator {
   /// `sin(x)`, `log(x, b)`, `rand()`, and (stage 5) `pi(2)`.
   Value _call(Call node) => switch (registry.lookup(node.name)) {
     null => throw EvaluationError("Unknown function '${node.name}(...)'"),
-    ConstantEntry _ => throw UnimplementedError(),
+    ConstantEntry c => _constantTimes(c, node),
     FunctionEntry f => registry.invoke(
-      f.name,
+      f.name, //Check node.name or f.name what is better (should be the same)
       node.args.map((ex) => evaluate(ex)).toList(),
       context,
     ),
   };
 
   /// Stage 5: a constant used with parentheses, `pi(2)` means `pi * 2`.
-  Value _constantTimes(ConstantEntry entry, Call node) =>
-      throw UnimplementedError();
+  Value _constantTimes(ConstantEntry entry, Call node) => node.args.length == 1
+      ? multiply(entry.value, evaluate(node.args.first))
+      : throw EvaluationError(
+          "'${entry.name}' is a constant: ${entry.name}(x) means ${entry.name} * x and needs exactly one value",
+        );
 }

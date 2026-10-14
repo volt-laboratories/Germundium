@@ -412,7 +412,7 @@ void main() {
     test('an error inside the parentheses keeps its own position', () {
       expect(() => eval('answer(1/0)'), throwsCalcError<MathError>(at: 8));
     });
-  }, skip: 'Stage 5');
+  });
 
   // -------------------------------------------------------------------------
   group(
